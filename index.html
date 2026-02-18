@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Guardians of Middle-earth — Mobile</title>
+<style>
+/* Fonts load inline for mobile - no external requests */
+@font-face{font-family:'Cinzel';font-style:normal;font-weight:400;font-display:swap;src:local('Georgia'),local('Times New Roman');}
+@font-face{font-family:'Cinzel Decorative';font-style:normal;font-weight:700;font-display:swap;src:local('Georgia'),local('Palatino');}
+
+:root {
+–gold:#c9a227;–gold-light:#f0d060;–gold-dark:#7a5f10;
+–shadow:#0a0705;–mid:#1a1008;–stone:#2a1e0e;–stone-lt:#5a4a30;
+–good:#3a8fc7;–good-lt:#7bc8f0;–evil:#c73a3a;–evil-lt:#f07878;
+–text:#e8d8a0;–dim:#8a7a50;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:none;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(–shadow);font-family:‘EB Garamond’,serif;color:var(–text);}
+
+/* ── SCREENS ── */
+.screen{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;}
+.screen.active{display:flex;}
+
+/* ── TITLE ── */
+#title{background:radial-gradient(ellipse at 50% 30%,#3a2010,#1a0f05 55%,#050302);padding:20px 16px 100px;}
+.t-logo{font-family:‘Cinzel Decorative’,serif;font-size:clamp(20px,6vw,38px);color:var(–gold-light);text-align:center;line-height:1.3;text-shadow:0 0 30px var(–gold);margin:24px 0 4px;}
+.t-sub{font-family:‘Cinzel’,serif;font-size:11px;letter-spacing:5px;color:var(–dim);text-align:center;margin-bottom:20px;}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(–gold),transparent);width:80%;max-width:300px;margin:0 auto 20px;box-shadow:0 0 6px var(–gold);}
+.pick-label{font-family:‘Cinzel’,serif;font-size:11px;letter-spacing:3px;color:var(–dim);text-align:center;margin-bottom:12px;}
+
+/* ── HERO GRID ── */
+.hgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;width:100%;max-width:400px;margin:0 auto 16px;padding:0 8px;}
+.hcard{border:1px solid var(–stone-lt);background:linear-gradient(160deg,var(–stone),var(–mid));padding:8px 4px 6px;text-align:center;cursor:pointer;transition:all .15s;position:relative;}
+.hcard.sel{border-color:var(–gold-light);box-shadow:0 0 12px rgba(201,162,39,.5);}
+.hcard.faction-good{border-top:2px solid var(–good);}
+.hcard.faction-evil{border-top:2px solid var(–evil);}
+.hcard .hi{font-size:22px;}
+.hcard .hn{font-family:‘Cinzel’,serif;font-size:8px;color:var(–text);letter-spacing:.5px;margin-top:2px;line-height:1.2;}
+.hcard .hr{font-size:8px;color:var(–dim);}
+.hcard.sel::after{content:‘✦’;position:absolute;top:2px;right:4px;color:var(–gold);font-size:8px;}
+
+.btn-go{font-family:‘Cinzel’,serif;font-size:13px;letter-spacing:3px;color:var(–shadow);background:linear-gradient(135deg,var(–gold-light),var(–gold),var(–gold-dark));border:none;padding:14px 44px;cursor:pointer;clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);box-shadow:0 0 20px rgba(201,162,39,.4);display:block;margin:0 auto 30px;}
+.btn-go:disabled{opacity:.35;}
+
+/* ── GAME SCREEN ── */
+#game{background:#000;flex-direction:column;}
+
+/* Top HUD */
+.hud-top{width:100%;height:44px;background:rgba(8,5,2,.95);border-bottom:1px solid var(–gold-dark);display:flex;align-items:center;justify-content:space-between;padding:0 10px;flex-shrink:0;z-index:20;}
+.base-hp{display:flex;align-items:center;gap:5px;}
+.base-hp-num{font-family:‘Cinzel’,serif;font-size:16px;font-weight:700;}
+.base-hp-num.g{color:var(–good-lt);text-shadow:0 0 8px var(–good);}
+.base-hp-num.e{color:var(–evil-lt);text-shadow:0 0 8px var(–evil);}
+.hud-mid{text-align:center;}
+.timer{font-family:‘Cinzel’,serif;font-size:15px;color:var(–gold);}
+.wave-lbl{font-size:9px;color:var(–dim);font-family:‘Cinzel’,serif;letter-spacing:1px;}
+
+/* Map */
+#map{position:relative;flex:1;overflow:hidden;touch-action:none;}
+#gc{display:block;width:100%;height:100%;}
+
+/* Bottom controls */
+.hud-bot{width:100%;background:rgba(8,5,2,.97);border-top:1px solid var(–gold-dark);display:flex;align-items:center;padding:6px 8px;gap:6px;flex-shrink:0;z-index:20;}
+
+/* Hero portrait */
+.portrait{width:50px;height:50px;border:2px solid var(–gold);background:var(–stone);display:flex;align-items:center;justify-content:center;font-size:24px;position:relative;flex-shrink:0;}
+.lvl-badge{position:absolute;bottom:-5px;right:-5px;width:18px;height:18px;background:var(–gold);color:var(–shadow);font-family:‘Cinzel’,serif;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);}
+
+/* Bars */
+.bars{display:flex;flex-direction:column;gap:3px;flex:0 0 90px;}
+.bar-lbl{font-size:8px;color:var(–dim);font-family:‘Cinzel’,serif;letter-spacing:.5px;}
+.bar-t{height:7px;background:var(–shadow);border:1px solid var(–stone-lt);overflow:hidden;}
+.bar-f{height:100%;transition:width .3s;}
+.hp-f{background:linear-gradient(90deg,#2a8a2a,#4ac44a);}
+.mp-f{background:linear-gradient(90deg,#2a4a8a,#4a8ac4);}
+.xp-t{height:2px;background:var(–shadow);margin-top:1px;}
+.xp-f{height:100%;background:linear-gradient(90deg,var(–gold-dark),var(–gold));transition:width .3s;}
+
+/* Ability buttons — 4 big touch targets */
+.ab-row{display:flex;gap:5px;flex:1;justify-content:center;}
+.ab-btn{width:52px;height:52px;border:2px solid var(–stone-lt);background:var(–mid);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .1s;position:relative;overflow:hidden;flex-shrink:0;}
+.ab-btn:active{transform:scale(.93);border-color:var(–gold-light);}
+.ab-btn.cd-active{opacity:.45;}
+.ab-btn.cd-active::after{content:attr(data-cd);position:absolute;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;font-family:‘Cinzel’,serif;font-size:18px;color:white;}
+.ab-icon{font-size:20px;}
+.ab-lbl{font-size:7px;color:var(–dim);font-family:‘Cinzel’,serif;text-align:center;line-height:1;margin-top:1px;}
+
+/* Gold + kills mini */
+.hud-stats{display:flex;flex-direction:column;align-items:center;gap:3px;margin-left:auto;}
+.gold-v{font-family:‘Cinzel’,serif;font-size:14px;color:var(–gold-light);text-shadow:0 0 6px var(–gold);}
+.gold-l{font-size:7px;color:var(–dim);font-family:‘Cinzel’,serif;letter-spacing:1px;}
+
+/* Joystick */
+#joystick-zone{position:absolute;left:10px;bottom:14px;width:100px;height:100px;z-index:30;pointer-events:auto;}
+#joystick-base{position:absolute;inset:0;border-radius:50%;background:rgba(201,162,39,.08);border:2px solid rgba(201,162,39,.25);}
+#joystick-knob{position:absolute;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle,rgba(201,162,39,.5),rgba(201,162,39,.15));border:2px solid rgba(201,162,39,.5);top:30px;left:30px;transition:none;pointer-events:none;}
+
+/* Combat log */
+#clog{position:absolute;top:50px;right:6px;display:flex;flex-direction:column;gap:2px;pointer-events:none;z-index:25;max-width:180px;}
+.cmsg{font-size:10px;color:var(–text);text-shadow:1px 1px 2px black;background:rgba(0,0,0,.55);padding:2px 5px;border-left:2px solid var(–gold-dark);animation:mfade 4s forwards;}
+@keyframes mfade{0%{opacity:1}70%{opacity:1}100%{opacity:0}}
+
+/* Float damage */
+.fdmg{position:absolute;font-family:‘Cinzel’,serif;font-weight:700;pointer-events:none;z-index:40;animation:fup 1.2s forwards;text-shadow:1px 1px 3px black;font-size:13px;}
+@keyframes fup{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-45px);opacity:0}}
+
+/* Respawn */
+.respawn{position:absolute;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:35;}
+.respawn.on{display:flex;}
+.rtext{font-family:‘Cinzel Decorative’,serif;font-size:24px;color:var(–evil-lt);}
+.rnum{font-family:‘Cinzel’,serif;font-size:44px;color:var(–gold);margin-top:8px;}
+.rsub{font-family:‘Cinzel’,serif;font-size:12px;color:var(–dim);margin-top:6px;}
+
+/* Minimap */
+#mm{position:absolute;top:50px;right:6px;width:90px;height:90px;border:1px solid var(–gold-dark);background:rgba(0,0,0,.8);z-index:5;}
+
+/* Targeting flash */
+#map.targeting{cursor:crosshair;}
+.target-ring{position:absolute;pointer-events:none;z-index:30;border-radius:50%;border:2px dashed rgba(201,162,39,.6);animation:tpulse .6s ease-in-out infinite alternate;}
+@keyframes tpulse{from{transform:scale(.85)opacity:.5}to{transform:scale(1.1);opacity:1}}
+
+/* ── GAME OVER ── */
+#gameover{background:radial-gradient(ellipse at center,#1a0f0f,#050303);align-items:center;justify-content:center;}
+.go-title{font-family:‘Cinzel Decorative’,serif;font-size:clamp(28px,8vw,56px);letter-spacing:4px;text-align:center;}
+.go-title.v{color:var(–gold-light);text-shadow:0 0 40px var(–gold);}
+.go-title.d{color:var(–evil-lt);text-shadow:0 0 40px var(–evil);}
+.go-stats{display:flex;gap:24px;margin:24px 0;}
+.go-s{text-align:center;}
+.go-sv{font-family:‘Cinzel’,serif;font-size:28px;color:var(–gold);}
+.go-sl{font-size:10px;color:var(–dim);letter-spacing:2px;font-family:‘Cinzel’,serif;}
+</style>
+
+</head>
+<body>
+
+<!-- TITLE -->
+
+<div id="title" class="screen active">
+  <div style="text-align:center;padding-top:10px;">
+    <svg width="70" height="70" viewBox="0 0 100 100" style="filter:drop-shadow(0 0 12px #c9a227);animation:spin 20s linear infinite;">
+      <defs><radialGradient id="g1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#f0d060"/><stop offset="100%" stop-color="#7a5f10"/></radialGradient></defs>
+      <circle cx="50" cy="50" r="45" fill="none" stroke="url(#g1)" stroke-width="2"/>
+      <circle cx="50" cy="50" r="22" fill="none" stroke="url(#g1)" stroke-width="2"/>
+      <polygon points="50,8 55,35 50,50 45,35" fill="url(#g1)" opacity=".9"/>
+      <polygon points="92,50 65,55 50,50 65,45" fill="url(#g1)" opacity=".9"/>
+      <polygon points="50,92 45,65 50,50 55,65" fill="url(#g1)" opacity=".9"/>
+      <polygon points="8,50 35,45 50,50 35,55"  fill="url(#g1)" opacity=".9"/>
+      <circle cx="50" cy="50" r="7" fill="url(#g1)"/>
+    </svg>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+  </div>
+  <div class="t-logo">Guardians of<br>Middle-earth</div>
+  <div class="t-sub">📱 MOBILE EDITION</div>
+  <div class="divider"></div>
+  <div class="pick-label">CHOOSE YOUR GUARDIAN</div>
+  <div class="hgrid" id="hgrid"></div>
+  <button class="btn-go" id="startBtn" disabled onclick="startGame()">ENTER BATTLE</button>
+</div>
+
+<!-- GAME -->
+
+<div id="game" class="screen">
+  <div class="hud-top">
+    <div class="base-hp">
+      <span>🏰</span>
+      <span class="base-hp-num g" id="ghp">100</span>
+    </div>
+    <div class="hud-mid">
+      <div class="timer" id="timer">0:00</div>
+      <div class="wave-lbl" id="wavelbl">WAVE 1</div>
+    </div>
+    <div class="base-hp">
+      <span class="base-hp-num e" id="ehp">100</span>
+      <span>🏯</span>
+    </div>
+  </div>
+
+  <div id="map">
+    <canvas id="gc"></canvas>
+    <canvas id="mm"></canvas>
+    <div id="clog"></div>
+    <div class="respawn" id="resp">
+      <div class="rtext">⚔ SLAIN ⚔</div>
+      <div class="rnum" id="rnum">5</div>
+      <div class="rsub">Respawning…</div>
+    </div>
+    <!-- Joystick -->
+    <div id="joystick-zone">
+      <div id="joystick-base"></div>
+      <div id="joystick-knob" id="jknob"></div>
+    </div>
+  </div>
+
+  <div class="hud-bot">
+    <div class="portrait" id="portrait">
+      <span id="picon">⚔</span>
+      <div class="lvl-badge" id="lvlbdg">1</div>
+    </div>
+    <div class="bars">
+      <div class="bar-lbl">VITALITY</div>
+      <div class="bar-t"><div class="bar-f hp-f" id="hpbar" style="width:100%"></div></div>
+      <div class="bar-lbl">POWER</div>
+      <div class="bar-t"><div class="bar-f mp-f" id="mpbar" style="width:100%"></div></div>
+      <div class="xp-t"><div class="xp-f" id="xpbar" style="width:0%"></div></div>
+    </div>
+    <div class="ab-row" id="abrow"></div>
+    <div class="hud-stats">
+      <div class="gold-v" id="goldv">500</div>
+      <div class="gold-l">⚙ GOLD</div>
+      <div class="gold-v" id="killv" style="color:var(--evil-lt);font-size:12px;">0 kills</div>
+    </div>
+  </div>
+</div>
+
+<!-- GAME OVER -->
+
+<div id="gameover" class="screen">
+  <div class="go-title" id="gotitle">VICTORY!</div>
+  <div style="font-family:'Cinzel',serif;font-size:12px;color:var(--dim);letter-spacing:3px;margin-top:8px;" id="gosub">THE LIGHT PREVAILS</div>
+  <div class="divider" style="margin-top:20px;"></div>
+  <div class="go-stats">
+    <div class="go-s"><div class="go-sv" id="gok">0</div><div class="go-sl">KILLS</div></div>
+    <div class="go-s"><div class="go-sv" id="gog">0</div><div class="go-sl">GOLD</div></div>
+    <div class="go-s"><div class="go-sv" id="got">0:00</div><div class="go-sl">TIME</div></div>
+    <div class="go-s"><div class="go-sv" id="gol">1</div><div class="go-sl">LEVEL</div></div>
+  </div>
+  <button class="btn-go" onclick="returnMenu()">PLAY AGAIN</button>
+</div>
+
+<script>
+// =================== HEROES DATA (all 36) ===================
+const HEROES=[
+  {id:'gandalf',name:'Gandalf',icon:'🧙',role:'Enchanter',faction:'good',hp:800,mp:600,atk:45,def:15,spd:190,abilities:[{name:'Staff Blast',icon:'🔥',cd:4,mp:40,dmg:80,range:200,aoe:true},{name:'Thunder',icon:'⚡',cd:6,mp:60,dmg:120,range:300,aoe:false},{name:'Istari Ward',icon:'🛡',cd:10,mp:80,dmg:-80,range:0,aoe:false,heal:true},{name:'You Shall Not Pass',icon:'✨',cd:30,mp:150,dmg:300,range:250,aoe:true,ultimate:true}]},
+  {id:'legolas',name:'Legolas',icon:'🏹',role:'Striker',faction:'good',hp:650,mp:400,atk:65,def:10,spd:240,abilities:[{name:'Rapid Shot',icon:'🏹',cd:3,mp:30,dmg:60,range:350,aoe:false},{name:'Pin Shot',icon:'📌',cd:8,mp:50,dmg:40,range:300,aoe:false,stun:true},{name:'Arrow Rain',icon:'🌧',cd:12,mp:70,dmg:90,range:280,aoe:true},{name:"Mirkwood Fury",icon:'🌿',cd:25,mp:130,dmg:250,range:350,aoe:true,ultimate:true}]},
+  {id:'aragorn',name:'Arathorn',icon:'👑',role:'Warrior',faction:'good',hp:950,mp:350,atk:55,def:25,spd:210,abilities:[{name:"King's Blade",icon:'⚔',cd:3,mp:25,dmg:70,range:80,aoe:false},{name:'Rally Cry',icon:'📣',cd:12,mp:50,dmg:0,range:0,aoe:false,buff:true},{name:'Charge',icon:'💨',cd:8,mp:40,dmg:50,range:300,aoe:false},{name:'Anduril Strike',icon:'🗡',cd:28,mp:120,dmg:280,range:150,aoe:true,ultimate:true}]},
+  {id:'galadriel',name:'Galadriel',icon:'🌟',role:'Enchanter',faction:'good',hp:700,mp:700,atk:35,def:20,spd:195,abilities:[{name:"Nenya's Light",icon:'💫',cd:5,mp:50,dmg:-60,range:150,aoe:true,heal:true},{name:'Visions',icon:'🔮',cd:15,mp:60,dmg:0,range:400,aoe:false},{name:'Elven Ward',icon:'🛡',cd:10,mp:70,dmg:0,range:0,aoe:false,buff:true},{name:'Ring Power',icon:'💍',cd:35,mp:180,dmg:150,range:300,aoe:true,stun:true,ultimate:true}]},
+  {id:'frodo',name:'Frodo',icon:'🧝',role:'Tactician',faction:'good',hp:600,mp:500,atk:30,def:15,spd:220,abilities:[{name:'Ring Bearer',icon:'💍',cd:12,mp:80,dmg:0,range:0,aoe:false,buff:true},{name:'Sting',icon:'🗡',cd:4,mp:30,dmg:55,range:70,aoe:false},{name:'Elven Cloak',icon:'🧥',cd:10,mp:50,dmg:0,range:0,aoe:false,buff:true},{name:'One Ring',icon:'🌑',cd:30,mp:150,dmg:200,range:200,aoe:true,ultimate:true}]},
+  {id:'elrond',name:'Elrond',icon:'🌊',role:'Enchanter',faction:'good',hp:750,mp:650,atk:40,def:22,spd:200,abilities:[{name:'Flood Gate',icon:'🌊',cd:6,mp:55,dmg:75,range:220,aoe:true},{name:'Rivendell Heal',icon:'💚',cd:8,mp:70,dmg:-90,range:0,aoe:false,heal:true},{name:'Elven Blade',icon:'⚔',cd:4,mp:30,dmg:60,range:85,aoe:false},{name:'Last Alliance',icon:'🏔',cd:32,mp:160,dmg:280,range:260,aoe:true,ultimate:true}]},
+  {id:'eowyn',name:'Éowyn',icon:'⚔',role:'Warrior',faction:'good',hp:850,mp:380,atk:60,def:20,spd:215,abilities:[{name:'Shield-maiden',icon:'🛡',cd:5,mp:35,dmg:65,range:80,aoe:false},{name:'Spear Throw',icon:'🗡',cd:7,mp:45,dmg:80,range:320,aoe:false},{name:'Valour',icon:'💪',cd:12,mp:60,dmg:0,range:0,aoe:false,buff:true},{name:'No Man Am I',icon:'👸',cd:28,mp:130,dmg:260,range:130,aoe:true,ultimate:true}]},
+  {id:'haldir',name:'Haldir',icon:'🌲',role:'Striker',faction:'good',hp:680,mp:420,atk:60,def:14,spd:235,abilities:[{name:'Elven Arrow',icon:'🏹',cd:3,mp:28,dmg:65,range:340,aoe:false},{name:'Forest Step',icon:'🌿',cd:9,mp:50,dmg:0,range:200,aoe:false,buff:true},{name:'Volley',icon:'🌧',cd:11,mp:65,dmg:85,range:270,aoe:true},{name:'Lothlórien Guard',icon:'🌳',cd:26,mp:130,dmg:240,range:300,aoe:true,ultimate:true}]},
+  {id:'bilbo',name:'Bilbo',icon:'🎩',role:'Tactician',faction:'good',hp:580,mp:520,atk:28,def:12,spd:230,abilities:[{name:'Burglar',icon:'💨',cd:10,mp:70,dmg:0,range:0,aoe:false,buff:true},{name:'Sting Poke',icon:'🗡',cd:3,mp:20,dmg:45,range:65,aoe:false},{name:'Riddles',icon:'❓',cd:8,mp:45,dmg:30,range:200,aoe:false,stun:true},{name:'Unexpected Party',icon:'🎊',cd:28,mp:140,dmg:180,range:220,aoe:true,ultimate:true}]},
+  {id:'thorin',name:'Thorin',icon:'⛏',role:'Warrior',faction:'good',hp:920,mp:340,atk:58,def:28,spd:200,abilities:[{name:'Axe Cleave',icon:'⛏',cd:4,mp:30,dmg:75,range:90,aoe:true},{name:'Dwarven Fury',icon:'🔥',cd:13,mp:60,dmg:0,range:0,aoe:false,buff:true},{name:'Shield Bash',icon:'🛡',cd:7,mp:45,dmg:55,range:80,aoe:false,stun:true},{name:'Heart of the Mountain',icon:'💎',cd:27,mp:130,dmg:270,range:140,aoe:true,ultimate:true}]},
+  {id:'kili',name:'Kili',icon:'🏹',role:'Striker',faction:'good',hp:660,mp:400,atk:62,def:12,spd:238,abilities:[{name:'Quick Quiver',icon:'🏹',cd:3,mp:28,dmg:55,range:320,aoe:false},{name:'Trick Shot',icon:'🌀',cd:7,mp:45,dmg:70,range:280,aoe:true},{name:'Dwarf Leap',icon:'💨',cd:9,mp:50,dmg:40,range:250,aoe:false},{name:'Desolation',icon:'⚡',cd:24,mp:125,dmg:230,range:320,aoe:true,ultimate:true}]},
+  {id:'gloin',name:'Glóin',icon:'🪓',role:'Defender',faction:'good',hp:980,mp:300,atk:48,def:32,spd:190,abilities:[{name:'Axe Throw',icon:'🪓',cd:5,mp:35,dmg:70,range:260,aoe:false},{name:'Iron Skin',icon:'⛰',cd:12,mp:55,dmg:0,range:0,aoe:false,buff:true},{name:'Ground Pound',icon:'💥',cd:8,mp:50,dmg:65,range:120,aoe:true},{name:'Dwarven Wrath',icon:'🔨',cd:28,mp:120,dmg:250,range:120,aoe:true,ultimate:true}]},
+  {id:'radagast',name:'Radagast',icon:'🦅',role:'Enchanter',faction:'good',hp:680,mp:680,atk:38,def:16,spd:205,abilities:[{name:'Beast Call',icon:'🐦',cd:8,mp:60,dmg:70,range:240,aoe:true},{name:'Nature Heal',icon:'🌿',cd:7,mp:65,dmg:-80,range:0,aoe:false,heal:true},{name:'Rabbit Sled',icon:'🐇',cd:10,mp:50,dmg:0,range:0,aoe:false,buff:true},{name:'Forest Wrath',icon:'🌳',cd:30,mp:150,dmg:280,range:270,aoe:true,ultimate:true}]},
+  {id:'beregond',name:'Beregond',icon:'🏰',role:'Defender',faction:'good',hp:1000,mp:300,atk:45,def:35,spd:185,abilities:[{name:'Gondor Spear',icon:'🗡',cd:4,mp:30,dmg:60,range:110,aoe:false},{name:'Tower Shield',icon:'🛡',cd:11,mp:55,dmg:0,range:0,aoe:false,buff:true},{name:'War Cry',icon:'📣',cd:9,mp:50,dmg:30,range:180,aoe:true,stun:true},{name:'White Tower',icon:'🏰',cd:26,mp:120,dmg:240,range:160,aoe:true,ultimate:true}]},
+  {id:'nori',name:'Nori',icon:'🎭',role:'Tactician',faction:'good',hp:620,mp:460,atk:42,def:14,spd:228,abilities:[{name:'Pickpocket',icon:'💰',cd:6,mp:35,dmg:50,range:75,aoe:false},{name:'Smoke Bomb',icon:'💨',cd:10,mp:55,dmg:20,range:200,aoe:true,stun:true},{name:'Quick Fingers',icon:'🖐',cd:8,mp:45,dmg:0,range:0,aoe:false,buff:true},{name:'Heist',icon:'🎪',cd:25,mp:130,dmg:210,range:180,aoe:true,ultimate:true}]},
+  {id:'ori',name:'Ori',icon:'📖',role:'Tactician',faction:'good',hp:580,mp:550,atk:32,def:13,spd:215,abilities:[{name:'Book Throw',icon:'📚',cd:4,mp:28,dmg:50,range:280,aoe:false},{name:'Chronicle',icon:'📖',cd:12,mp:60,dmg:0,range:350,aoe:false},{name:'Quill Strike',icon:'✒',cd:7,mp:45,dmg:40,range:90,aoe:false,stun:true},{name:'Lost Tales',icon:'📜',cd:28,mp:140,dmg:200,range:230,aoe:true,ultimate:true}]},
+  {id:'hildifons',name:'Hildifons',icon:'🌄',role:'Striker',faction:'good',hp:640,mp:430,atk:55,def:11,spd:245,abilities:[{name:'Wanderer Shot',icon:'🏹',cd:3,mp:25,dmg:58,range:380,aoe:false},{name:'Trailblaze',icon:'💨',cd:8,mp:40,dmg:0,range:0,aoe:false,buff:true},{name:'Ambush',icon:'👁',cd:10,mp:55,dmg:75,range:150,aoe:false},{name:'Lost Road',icon:'🌅',cd:26,mp:130,dmg:220,range:280,aoe:true,ultimate:true}]},
+  {id:'thrain',name:'Thraín',icon:'👴',role:'Warrior',faction:'good',hp:900,mp:330,atk:52,def:26,spd:195,abilities:[{name:'Dwarven Axe',icon:'⛏',cd:4,mp:28,dmg:68,range:85,aoe:false},{name:'Kings Resolve',icon:'💪',cd:13,mp:55,dmg:0,range:0,aoe:false,buff:true},{name:'Charge',icon:'💨',cd:7,mp:40,dmg:45,range:280,aoe:false},{name:'Arkenstone',icon:'💎',cd:27,mp:125,dmg:255,range:200,aoe:true,ultimate:true}]},
+  // EVIL
+  {id:'saruman',name:'Saruman',icon:'🌑',role:'Enchanter',faction:'evil',hp:750,mp:700,atk:50,def:12,spd:185,abilities:[{name:'Voice of Power',icon:'🗣',cd:6,mp:50,dmg:50,range:250,aoe:false,stun:true},{name:'Palantir Blast',icon:'🔵',cd:4,mp:40,dmg:85,range:320,aoe:false},{name:'Uruk Buff',icon:'👹',cd:20,mp:100,dmg:0,range:0,aoe:false,buff:true},{name:'Ruin of Isengard',icon:'⚙',cd:32,mp:160,dmg:320,range:280,aoe:true,ultimate:true}]},
+  {id:'witchking',name:'Witch-King',icon:'👻',role:'Warrior',faction:'evil',hp:1000,mp:300,atk:70,def:30,spd:195,abilities:[{name:'Dark Blade',icon:'🖤',cd:3,mp:20,dmg:85,range:90,aoe:false},{name:'Morgul Knife',icon:'🗡',cd:8,mp:40,dmg:60,range:80,aoe:false},{name:'Terror Cry',icon:'😱',cd:12,mp:50,dmg:30,range:200,aoe:true},{name:'None Can Kill Me',icon:'💀',cd:30,mp:130,dmg:240,range:260,aoe:true,ultimate:true}]},
+  {id:'sauron',name:'Sauron',icon:'🔥',role:'Warrior',faction:'evil',hp:1100,mp:500,atk:80,def:35,spd:175,abilities:[{name:'Dark Mace',icon:'⚔',cd:3,mp:30,dmg:90,range:90,aoe:false},{name:'Ring Pull',icon:'💍',cd:10,mp:60,dmg:40,range:250,aoe:true},{name:'Shadow Form',icon:'🌑',cd:15,mp:80,dmg:0,range:0,aoe:false,buff:true},{name:'Lord of Darkness',icon:'🌋',cd:35,mp:200,dmg:400,range:300,aoe:true,ultimate:true}]},
+  {id:'gollum',name:'Gollum',icon:'🐸',role:'Tactician',faction:'evil',hp:600,mp:450,atk:40,def:8,spd:260,abilities:[{name:'Sneaking',icon:'👁',cd:8,mp:50,dmg:0,range:0,aoe:false,buff:true},{name:'Ring Throw',icon:'💎',cd:5,mp:35,dmg:65,range:280,aoe:false},{name:'Bite',icon:'🦷',cd:4,mp:20,dmg:55,range:60,aoe:false},{name:'My Precious',icon:'✨',cd:25,mp:120,dmg:200,range:200,aoe:true,ultimate:true}]},
+  {id:'agandaur',name:'Agandaûr',icon:'🗡',role:'Warrior',faction:'evil',hp:950,mp:380,atk:65,def:22,spd:200,abilities:[{name:'Dark Sword',icon:'🗡',cd:3,mp:28,dmg:78,range:88,aoe:false},{name:'Dark Command',icon:'📣',cd:12,mp:55,dmg:0,range:0,aoe:false,buff:true},{name:'Blade Storm',icon:'🌀',cd:8,mp:50,dmg:70,range:110,aoe:true},{name:'Shadow Ruin',icon:'💀',cd:28,mp:140,dmg:275,range:220,aoe:true,ultimate:true}]},
+  {id:'mouthofsauron',name:'Mouth of Sauron',icon:'😈',role:'Enchanter',faction:'evil',hp:720,mp:650,atk:45,def:18,spd:190,abilities:[{name:'Dark Words',icon:'🗣',cd:5,mp:45,dmg:45,range:230,aoe:false,stun:true},{name:'Dark Blast',icon:'💀',cd:4,mp:42,dmg:80,range:310,aoe:false},{name:'Saurons Voice',icon:'🌑',cd:10,mp:65,dmg:40,range:200,aoe:true},{name:'Dark Mandate',icon:'👁',cd:30,mp:155,dmg:295,range:265,aoe:true,ultimate:true}]},
+  {id:'mozgog',name:'Mozgog',icon:'🪖',role:'Warrior',faction:'evil',hp:940,mp:320,atk:62,def:25,spd:205,abilities:[{name:'Orc Chop',icon:'🪓',cd:3,mp:25,dmg:72,range:85,aoe:false},{name:'Warchief Roar',icon:'📣',cd:10,mp:50,dmg:30,range:180,aoe:true},{name:'Brute Rush',icon:'💨',cd:7,mp:40,dmg:55,range:270,aoe:false},{name:'Orcish Frenzy',icon:'🔥',cd:26,mp:130,dmg:260,range:200,aoe:true,ultimate:true}]},
+  {id:'felgrom',name:'Felgrom',icon:'💀',role:'Defender',faction:'evil',hp:1020,mp:310,atk:46,def:36,spd:182,abilities:[{name:'Bone Crush',icon:'💀',cd:4,mp:32,dmg:65,range:88,aoe:false},{name:'Death Grasp',icon:'🖐',cd:8,mp:48,dmg:50,range:90,aoe:false,stun:true},{name:'Necrotic Shield',icon:'🛡',cd:11,mp:60,dmg:0,range:0,aoe:false,buff:true},{name:'Tomb Eruption',icon:'⚰',cd:29,mp:145,dmg:265,range:240,aoe:true,ultimate:true}]},
+  {id:'lugbol',name:'Lugbol',icon:'🪨',role:'Defender',faction:'evil',hp:990,mp:290,atk:44,def:33,spd:185,abilities:[{name:'Stone Fist',icon:'🪨',cd:4,mp:30,dmg:62,range:82,aoe:false},{name:'Boulder Toss',icon:'💥',cd:7,mp:50,dmg:80,range:260,aoe:true},{name:'Orc Bulwark',icon:'🛡',cd:10,mp:55,dmg:0,range:0,aoe:false,buff:true},{name:'Rockslide',icon:'⛰',cd:27,mp:135,dmg:255,range:230,aoe:true,ultimate:true}]},
+  {id:'snaga',name:'Snaga',icon:'🏃',role:'Striker',faction:'evil',hp:610,mp:410,atk:58,def:9,spd:255,abilities:[{name:'Scurry Strike',icon:'⚡',cd:2,mp:22,dmg:52,range:72,aoe:false},{name:'Dirty Tricks',icon:'💩',cd:7,mp:38,dmg:45,range:200,aoe:false,stun:true},{name:'Flee!',icon:'💨',cd:8,mp:40,dmg:0,range:0,aoe:false,buff:true},{name:'Swarm',icon:'👾',cd:23,mp:115,dmg:215,range:190,aoe:true,ultimate:true}]},
+  {id:'runsig',name:'Runsig',icon:'🔱',role:'Tactician',faction:'evil',hp:680,mp:490,atk:44,def:16,spd:222,abilities:[{name:'Dark Dagger',icon:'🗡',cd:4,mp:32,dmg:62,range:78,aoe:false},{name:'Poison Cloud',icon:'☠',cd:10,mp:58,dmg:55,range:210,aoe:true},{name:'Shadow Step',icon:'👁',cd:9,mp:52,dmg:0,range:220,aoe:false,buff:true},{name:'Dark Conspiracy',icon:'🌑',cd:25,mp:128,dmg:218,range:185,aoe:true,ultimate:true}]},
+  {id:'wulfrun',name:'Wulfrun',icon:'🐺',role:'Warrior',faction:'evil',hp:870,mp:360,atk:58,def:21,spd:218,abilities:[{name:'Wolf Claw',icon:'🐺',cd:3,mp:26,dmg:68,range:82,aoe:false},{name:'Pack Howl',icon:'🌕',cd:11,mp:52,dmg:0,range:0,aoe:false,buff:true},{name:'Pounce',icon:'💨',cd:8,mp:44,dmg:52,range:290,aoe:false},{name:'Feral Rage',icon:'🔴',cd:26,mp:128,dmg:248,range:175,aoe:true,ultimate:true}]},
+  {id:'gothmog',name:'Gothmog',icon:'🔴',role:'Warrior',faction:'evil',hp:960,mp:340,atk:63,def:24,spd:200,abilities:[{name:'Lava Fist',icon:'🔥',cd:3,mp:28,dmg:74,range:87,aoe:false},{name:'Fire Brand',icon:'🔥',cd:8,mp:55,dmg:78,range:180,aoe:true},{name:'Balrog Form',icon:'😈',cd:15,mp:80,dmg:0,range:0,aoe:false,buff:true},{name:'Fire Whip',icon:'🌋',cd:28,mp:138,dmg:268,range:235,aoe:true,ultimate:true}]},
+  {id:'greatgoblin',name:'Great Goblin',icon:'👺',role:'Defender',faction:'evil',hp:1050,mp:280,atk:50,def:30,spd:178,abilities:[{name:'Fat Fist',icon:'👊',cd:4,mp:30,dmg:68,range:90,aoe:false},{name:'Summon Goblins',icon:'👾',cd:16,mp:75,dmg:0,range:0,aoe:false,buff:true},{name:'Roll',icon:'💥',cd:9,mp:55,dmg:70,range:150,aoe:true},{name:'King of Goblins',icon:'👑',cd:30,mp:140,dmg:260,range:250,aoe:true,ultimate:true}]},
+  {id:'bert',name:'Bert',icon:'🧌',role:'Defender',faction:'evil',hp:1080,mp:260,atk:52,def:32,spd:172,abilities:[{name:'Club Smash',icon:'🪵',cd:4,mp:28,dmg:72,range:95,aoe:false},{name:'Stone Throw',icon:'🪨',cd:7,mp:50,dmg:85,range:250,aoe:false},{name:'Troll Hide',icon:'🛡',cd:12,mp:60,dmg:0,range:0,aoe:false,buff:true},{name:'Troll Stomp',icon:'💥',cd:28,mp:138,dmg:270,range:200,aoe:true,ultimate:true}]},
+  {id:'unglob',name:'Unglob',icon:'🫧',role:'Enchanter',faction:'evil',hp:710,mp:620,atk:42,def:15,spd:192,abilities:[{name:'Slime Shot',icon:'🫧',cd:5,mp:40,dmg:60,range:290,aoe:false,stun:true},{name:'Toxic Aura',icon:'☠',cd:9,mp:65,dmg:70,range:210,aoe:true},{name:'Bubble Shield',icon:'🫧',cd:11,mp:70,dmg:0,range:0,aoe:false,buff:true},{name:'Swamp Eruption',icon:'💀',cd:31,mp:152,dmg:285,range:255,aoe:true,ultimate:true}]},
+  {id:'ugluk',name:'Uglúk',icon:'🪖',role:'Warrior',faction:'evil',hp:930,mp:330,atk:64,def:23,spd:208,abilities:[{name:'Uruk Blade',icon:'⚔',cd:3,mp:26,dmg:76,range:86,aoe:false},{name:'Commander Roar',icon:'📣',cd:11,mp:50,dmg:0,range:0,aoe:false,buff:true},{name:'Hunt Down',icon:'💨',cd:7,mp:42,dmg:50,range:285,aoe:false},{name:'Uruk-hai Storm',icon:'⚡',cd:27,mp:105,dmg:262,range:215,aoe:true,ultimate:true}]},
+  {id:'shelob',name:'Shelob',icon:'🕷',role:'Tactician',faction:'evil',hp:720,mp:480,atk:55,def:14,spd:250,abilities:[{name:'Venom Bite',icon:'☠',cd:4,mp:30,dmg:60,range:78,aoe:false},{name:'Web Trap',icon:'🕸',cd:9,mp:50,dmg:30,range:240,aoe:true},{name:'Shadow Stalk',icon:'👁',cd:11,mp:60,dmg:0,range:0,aoe:false,buff:true},{name:"Spider's Wrath",icon:'🕷',cd:28,mp:130,dmg:240,range:220,aoe:true,ultimate:true}]},
+];
+
+const ITEMS=[{name:'Mithril Ring',icon:'💍',cost:250,atk:15,def:5},{name:'Elven Bow',icon:'🏹',cost:300,atk:25},{name:'Gondorian Shield',icon:'🛡',cost:250,def:20},{name:'Lembas Bread',icon:'🍞',cost:150,hp:100,mp:50},{name:'Morgul Blade',icon:'🗡',cost:350,atk:30},{name:'Ents Root',icon:'🌿',cost:200,hp:200,def:5},{name:'Palantir Shard',icon:'🔮',cost:400,atk:20,mp:100},{name:'Dragon Scale',icon:'🐉',cost:500,def:30,hp:150},{name:"Andúril",icon:'⚔',cost:600,atk:40,def:10},{name:'One Ring',icon:'✨',cost:800,atk:25,def:25,hp:200}];
+
+// =================== STATE ===================
+let gs={},raf,lastT=0,selHero=null;
+
+// =================== CANVAS ===================
+const canvas=document.getElementById('gc');
+const ctx=canvas.getContext('2d');
+const mmC=document.getElementById('mm');
+const mmX=mmC.getContext('2d');
+
+function resizeCvs(){
+  const mc=document.getElementById('map');
+  canvas.width=mc.clientWidth; canvas.height=mc.clientHeight;
+  mmC.width=90; mmC.height=90;
+}
+
+// =================== JOYSTICK ===================
+const jZone=document.getElementById('joystick-zone');
+const jKnob=document.getElementById('joystick-knob');
+const jBase=document.getElementById('joystick-base');
+let joy={active:false,id:null,cx:0,cy:0,dx:0,dy:0};
+const JR=40; // max radius
+
+jZone.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  const t=e.changedTouches[0];
+  const r=jZone.getBoundingClientRect();
+  joy.active=true; joy.id=t.identifier;
+  joy.cx=r.left+r.width/2; joy.cy=r.top+r.height/2;
+  updateJoy(t);
+},{passive:false});
+
+document.addEventListener('touchmove',e=>{
+  if(!joy.active) return;
+  for(const t of e.changedTouches){
+    if(t.identifier===joy.id){e.preventDefault();updateJoy(t);}
+  }
+},{passive:false});
+
+document.addEventListener('touchend',e=>{
+  for(const t of e.changedTouches){
+    if(t.identifier===joy.id){joy.active=false;joy.dx=0;joy.dy=0;jKnob.style.transform='translate(0,0)';}
+  }
+});
+
+function updateJoy(t){
+  const dx=t.clientX-joy.cx, dy=t.clientY-joy.cy;
+  const dist=Math.min(Math.sqrt(dx*dx+dy*dy),JR);
+  const ang=Math.atan2(dy,dx);
+  joy.dx=Math.cos(ang)*(dist/JR);
+  joy.dy=Math.sin(ang)*(dist/JR);
+  jKnob.style.transform=`translate(${Math.cos(ang)*dist}px,${Math.sin(ang)*dist}px)`;
+}
+
+// =================== HERO SELECT ===================
+function buildGrid(){
+  const g=document.getElementById('hgrid');
+  HEROES.forEach(h=>{
+    const c=document.createElement('div');
+    c.className=`hcard faction-${h.faction}`;
+    c.innerHTML=`<div class="hi">${h.icon}</div><div class="hn">${h.name}</div><div class="hr">${h.role}</div>`;
+    c.ontouchend=e=>{e.preventDefault();selectHero(h.id,c);};
+    c.onclick=()=>selectHero(h.id,c);
+    g.appendChild(c);
+  });
+}
+
+function selectHero(id,el){
+  document.querySelectorAll('.hcard').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  selHero=id;
+  document.getElementById('startBtn').disabled=false;
+}
+
+// =================== ABILITY BUTTONS ===================
+function buildAbRow(){
+  const row=document.getElementById('abrow');
+  row.innerHTML='';
+  gs.hero.abilities.forEach((ab,i)=>{
+    const b=document.createElement('div');
+    b.className='ab-btn';
+    b.id=`ab${i}`;
+    b.innerHTML=`<span class="ab-icon">${ab.icon}</span><span class="ab-lbl">${ab.name.split(' ')[0]}</span>`;
+    // Touch + click
+    b.ontouchend=e=>{e.preventDefault();tapAbility(i);};
+    b.onclick=()=>tapAbility(i);
+    row.appendChild(b);
+  });
+}
+
+function tapAbility(i){
+  const h=gs.hero; if(h.dead) return;
+  const ab=h.abilities[i];
+  if(h.cooldowns[i]>0||h.curMp<ab.mp) return;
+  // For mobile: AoE/projectile abilities auto-aim at nearest enemy
+  if(ab.heal||ab.buff){
+    castAb(i,h.x,h.y); return;
+  }
+  const allE=[...gs.enemies,...gs.eminions];
+  let closest=null,cd=9999;
+  allE.forEach(e=>{if(e.dead)return;const d=dist(h,e);if(d<cd){closest=e;cd=d;}});
+  const tx=closest?closest.x:h.x+(h.facing||1)*200;
+  const ty=closest?closest.y:h.y;
+  castAb(i,tx,ty);
+}
+
+function castAb(i,tx,ty){
+  const h=gs.hero;
+  const ab=h.abilities[i];
+  h.curMp-=ab.mp; h.cooldowns[i]=ab.cd;
+  if(ab.heal){h.curHp=Math.min(h.maxHp,h.curHp+Math.abs(ab.dmg));spawnFx(h.x,h.y,'#4ac44a',`+${Math.abs(ab.dmg)}`);addLog(`💚 ${ab.name}`);return;}
+  if(ab.buff){h.buffT=5;spawnFx(h.x,h.y,'#f0d060','✨ BUFFED');addLog(`✨ ${ab.name}`);return;}
+  if(ab.aoe){
+    const all=[...gs.enemies,...gs.eminions];
+    all.forEach(e=>{if(e.dead)return;if(dist2(e,{x:tx,y:ty})<ab.range*ab.range)applyDmg(e,ab.dmg+h.atk*.5,true);});
+    burst(tx,ty,ab.ultimate?'#ff8800':'#c9a227',ab.ultimate?14:8);
+    addLog(`💥 ${ab.name}!`); return;
+  }
+  // Projectile
+  const ang=Math.atan2(ty-h.y,tx-h.x);
+  gs.projs.push({x:h.x,y:h.y,vx:Math.cos(ang)*380,vy:Math.sin(ang)*380,dmg:ab.dmg+h.atk*.3,stun:ab.stun,owner:'player',life:ab.range/200,color:ab.ultimate?'#ff8800':'#f0d060',size:ab.ultimate?6:4});
+  addLog(`🎯 ${ab.name}`);
+}
+
+// =================== INIT ===================
+function startGame(){
+  if(!selHero) return;
+  const hd=HEROES.find(h=>h.id===selHero);
+  const MW=1400,MH=700;
+  gs={
+    hero:{...hd,x:120,y:MH/2,maxHp:hd.hp,curHp:hd.hp,maxMp:hd.mp,curMp:hd.mp,
+      level:1,xp:0,xpNext:100,gold:500,kills:0,items:[],cooldowns:hd.abilities.map(()=>0),
+      dead:false,respT:0,atkCd:0,buffT:0,facing:1},
+    enemies:[],fminions:[],eminions:[],towers:[],projs:[],parts:[],
+    goodHp:100,evilHp:100,wave:1,waveT:0,gameT:0,over:false,
+    MW,MH,cam:{x:0,y:0}
+  };
+  // Towers
+  gs.towers.push({x:200,y:MH*.22,hp:300,maxHp:300,faction:'good',size:20,range:160,attackCd:0});
+  gs.towers.push({x:200,y:MH*.78,hp:300,maxHp:300,faction:'good',size:20,range:160,attackCd:0});
+  gs.towers.push({x:350,y:MH*.50,hp:350,maxHp:350,faction:'good',size:22,range:170,attackCd:0});
+  gs.towers.push({x:MW-200,y:MH*.22,hp:300,maxHp:300,faction:'evil',size:20,range:160,attackCd:0});
+  gs.towers.push({x:MW-200,y:MH*.78,hp:300,maxHp:300,faction:'evil',size:20,range:160,attackCd:0});
+  gs.towers.push({x:MW-350,y:MH*.50,hp:350,maxHp:350,faction:'evil',size:22,range:170,attackCd:0});
+
+  spawnWave();
+  buildAbRow();
+  document.getElementById('picon').textContent=gs.hero.icon;
+  showScr('game'); resizeCvs();
+  addLog('⚔ Tap abilities to fight! Joystick to move. Tap enemies to focus!');
+  addLog('👁 Fog of war: enemies only visible near you or allies!');
+  lastT=performance.now();
+  raf=requestAnimationFrame(loop);
+}
+
+function spawnWave(){
+  const {MW,MH,wave}=gs;
+  const n=3+wave;
+  for(let i=0;i<n;i++) gs.fminions.push({x:80+Math.random()*40,y:MH*.3+Math.random()*MH*.4,hp:80+wave*10,maxHp:80+wave*10,atk:12+wave*2,def:3,speed:90,cd:0,dead:false,size:8,tcd:0});
+  for(let i=0;i<n;i++) gs.eminions.push({x:MW-80-Math.random()*40,y:MH*.3+Math.random()*MH*.4,hp:80+wave*10,maxHp:80+wave*10,atk:12+wave*2,def:3,speed:90,cd:0,dead:false,size:8,tcd:0});
+  if(wave%2===0||wave===1){
+    const evilH=HEROES.filter(h=>h.faction==='evil');
+    const eh=evilH[Math.floor(Math.random()*evilH.length)];
+    gs.enemies.push({...eh,x:MW-130-Math.random()*60,y:MH/2+(Math.random()-.5)*150,maxHp:eh.hp*(1+wave*.15),curHp:eh.hp*(1+wave*.15),atk:eh.atk*(1+wave*.1),def:eh.def,speed:1.5,cd:0,dead:false,size:16,isHero:true,tcd:0});
+  }
+  addLog(`⚔ Wave ${wave} arrives!`);
+}
+
+// =================== LOOP ===================
+function loop(ts){
+  if(!gs.over) raf=requestAnimationFrame(loop);
+  const dt=Math.min((ts-lastT)/1000,.05); lastT=ts;
+  update(dt); draw(); hudUpdate();
+}
+
+function dist(a,b){const dx=a.x-b.x,dy=a.y-b.y;return Math.sqrt(dx*dx+dy*dy);}
+function dist2(a,b){const dx=a.x-b.x,dy=a.y-b.y;return dx*dx+dy*dy;}
+
+function update(dt){
+  gs.gameT+=dt;
+  const h=gs.hero,{MW,MH}=gs;
+
+  // Wave
+  gs.waveT+=dt;
+  if(gs.waveT>=Math.max(20,40-gs.wave*2)){gs.waveT=0;gs.wave++;spawnWave();}
+
+  // Respawn
+  if(h.dead){
+    h.respT-=dt;
+    document.getElementById('rnum').textContent=Math.ceil(Math.max(0,h.respT));
+    if(h.respT<=0){h.dead=false;h.curHp=h.maxHp*.6;h.curMp=h.maxMp*.6;h.x=120;h.y=MH/2;document.getElementById('resp').classList.remove('on');addLog('⚡ Respawned!');}
+    return;
+  }
+
+  // MP regen
+  h.curMp=Math.min(h.maxMp,h.curMp+15*dt);
+  h.gold+=2*dt;
+  h.buffT=Math.max(0,h.buffT-dt);
+  h.cooldowns=h.cooldowns.map(c=>Math.max(0,c-dt));
+  h.atkCd=Math.max(0,h.atkCd-dt);
+
+  // Joystick movement
+  if(joy.active&&(Math.abs(joy.dx)>.05||Math.abs(joy.dy)>.05)){
+    const spd=(h.spd/100)*185; // Increased from 155 for better mobility
+    h.x+=joy.dx*spd*dt; h.y+=joy.dy*spd*dt;
+    // Allow movement across the full map with padding from edges
+    h.x=Math.max(60,Math.min(MW-60,h.x));
+    h.y=Math.max(40,Math.min(MH-40,h.y));
+    h.facing=joy.dx>0?1:-1;
+  }
+
+  // Auto attack nearest enemy
+  if(h.atkCd<=0){
+    const all=[...gs.enemies,...gs.eminions];
+    let cl=null,cd=110;
+    all.forEach(e=>{if(e.dead)return;const d=dist(h,e);if(d<cd){cl=e;cd=d;}});
+    if(cl){applyDmg(cl,(h.atk+(h.buffT>0?h.atk*.5:0)),true);h.atkCd=1.1;}
+  }
+
+  // Tower attacks player
+  gs.towers.filter(t=>t.faction==='evil'&&t.hp>0).forEach(t=>{
+    t.attackCd=Math.max(0,t.attackCd-dt);
+    if(dist(h,t)<t.range&&t.attackCd<=0){applyDmgHero(30+gs.wave*5);t.attackCd=2;}
+  });
+
+  // Move enemies
+  gs.enemies.forEach(e=>{if(!e.dead)moveEnemy(e,dt);});
+  gs.fminions.forEach(m=>{if(!m.dead)moveMinion(m,dt,'right');});
+  gs.eminions.forEach(m=>{if(!m.dead)moveMinion(m,dt,'left');});
+
+  // Projectiles
+  gs.projs=gs.projs.filter(p=>{
+    p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;
+    if(p.life<=0)return false;
+    const tgts=p.owner==='player'?[...gs.enemies,...gs.eminions]:[h];
+    for(const t of tgts){
+      if(t.dead)continue;
+      if(dist(p,t)<22){
+        if(p.owner==='player')applyDmg(t,p.dmg,true);
+        else applyDmgHero(p.dmg);
+        if(p.stun)t.stunT=1.5;
+        return false;
+      }
+    }
+    return true;
+  });
+
+  // Particles
+  gs.parts=gs.parts.filter(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt*1.5;return p.life>0;});
+
+  // Base attacks
+  gs.eminions.filter(m=>!m.dead).forEach(m=>{if(m.x<80){gs.goodHp-=m.atk*dt*.1;if(gs.goodHp<=0)endGame(false);}});
+  gs.enemies.filter(e=>!e.dead).forEach(e=>{if(e.x<100){gs.goodHp-=e.atk*dt*.05;if(gs.goodHp<=0)endGame(false);}});
+  if(!h.dead&&h.x>MW-100){gs.evilHp-=h.atk*.08*dt;if(gs.evilHp<=0)endGame(true);}
+  gs.fminions.filter(m=>!m.dead).forEach(m=>{if(m.x>MW-80){gs.evilHp-=m.atk*dt*.05;if(gs.evilHp<=0)endGame(true);}});
+
+  // Friendly minion attacks evil towers
+  gs.fminions.filter(m=>!m.dead).forEach(m=>{
+    gs.towers.filter(t=>t.faction==='evil'&&t.hp>0).forEach(t=>{
+      if(dist(m,t)<60){m.tcd-=dt;if(m.tcd<=0){t.hp-=m.atk*.3;m.tcd=3;if(t.hp<=0){t.hp=0;addLog('⚔ Evil tower falls!');}}}
+    });
+  });
+  // Enemy attacks good towers
+  [...gs.enemies,...gs.eminions].filter(e=>!e.dead).forEach(e=>{
+    gs.towers.filter(t=>t.faction==='good'&&t.hp>0).forEach(t=>{
+      if(dist(e,t)<60){e.tcd-=dt;if(e.tcd<=0){t.hp-=( e.atk||15)*.5;e.tcd=2;if(t.hp<=0){t.hp=0;addLog('💥 Good tower destroyed!');}}}
+    });
+  });
+
+  // Tower attacks on minions
+  gs.towers.forEach(t=>{
+    if(t.hp<=0)return;
+    t.attackCd=Math.max(0,t.attackCd-dt);
+    if(t.attackCd>0)return;
+    const targets=t.faction==='evil'?gs.fminions:gs.eminions;
+    let cl=null,cd=t.range+5;
+    targets.forEach(m=>{if(m.dead)return;const d=dist(m,t);if(d<cd){cl=m;cd=d;}});
+    if(cl){applyDmg(cl,25+gs.wave*3,false);t.attackCd=1.5;}
+  });
+
+  // Cleanup dead
+  gs.fminions=gs.fminions.filter(m=>!m.dead);
+  gs.eminions=gs.eminions.filter(m=>!m.dead);
+  gs.enemies=gs.enemies.filter(e=>!e.dead);
+}
+
+function applyDmg(e,dmg,fromPlayer){
+  const actual=Math.max(1,dmg-(e.def||0)*.3);
+  e.curHp-=actual; spawnFx(e.x,e.y,'#ff6040',`-${Math.ceil(actual)}`);
+  if((e.curHp||0)<=0&&!e.dead){
+    e.dead=true; if(fromPlayer){
+      const g=e.isHero?150+gs.wave*25:25+gs.wave*3;
+      const x=e.isHero?80+gs.wave*15:20+gs.wave*5;
+      gs.hero.gold+=g; if(e.isHero)gs.hero.kills++;
+      addXp(x); spawnFx(e.x,e.y,'#f0d060',`+${g}💰`);
+      addLog(`💀 ${e.isHero?e.name:'Minion'} slain! +${g}💰`);
+    }
+  }
+}
+
+function applyDmgHero(dmg){
+  const h=gs.hero; const actual=Math.max(1,dmg-h.def*.3);
+  h.curHp-=actual; spawnFx(h.x,h.y,'#ff4020',`-${Math.ceil(actual)}`);
+  if(h.curHp<=0&&!h.dead){h.dead=true;h.curHp=0;h.respT=5+gs.wave;document.getElementById('resp').classList.add('on');addLog('💀 Slain! Respawning…');}
+}
+
+function addXp(a){
+  const h=gs.hero; h.xp+=a;
+  while(h.xp>=h.xpNext){h.xp-=h.xpNext;h.level++;h.xpNext=Math.floor(h.xpNext*1.4);h.maxHp+=80;h.curHp=h.maxHp;h.maxMp+=40;h.curMp=h.maxMp;h.atk+=5;h.def+=2;spawnFx(h.x,h.y,'#f0d060',`LEVEL ${h.level}!`);addLog(`⬆ Level ${h.level}!`);}
+}
+
+function moveEnemy(e,dt){
+  if(e.stunT>0){e.stunT-=dt;return;}
+  const h=gs.hero;
+  const tx=h.dead?120:h.x, ty=h.dead?gs.MH/2:h.y;
+  const dx=tx-e.x,dy=ty-e.y,d=Math.sqrt(dx*dx+dy*dy);
+  if(d>85){e.x+=dx/d*(e.speed||1.5)*80*dt;e.y+=dy/d*(e.speed||1.5)*80*dt;}
+  else{e.cd-=dt;if(e.cd<=0){applyDmgHero((e.atk||30)*(0.8+Math.random()*.4));e.cd=1.5;}}
+}
+
+function moveMinion(m,dt,dir){
+  if(m.stunT>0){m.stunT-=dt;return;}
+  const {MW,MH}=gs;
+  const opp=dir==='right'?[...gs.eminions,...gs.enemies]:[...gs.fminions,...(gs.hero.dead?[]:[gs.hero])];
+  let cl=null,cd=140;
+  opp.forEach(t=>{if(!t||t.dead)return;const d=dist(m,t);if(d<cd){cl=t;cd=d;}});
+  if(cl&&cd<45){m.cd-=dt;if(m.cd<=0){if(cl===gs.hero)applyDmgHero(m.atk);else applyDmg(cl,m.atk,false);m.cd=1.5;}}
+  else{const tx=cl?cl.x:(dir==='right'?MW-80:80),ty=cl?cl.y:MH/2;const dx=tx-m.x,dy=ty-m.y,d=Math.sqrt(dx*dx+dy*dy);if(d>5){m.x+=dx/d*m.speed*dt;m.y+=dy/d*m.speed*dt;}}
+}
+
+function spawnFx(x,y,color,text){
+  const mc=document.getElementById('map');
+  const sx=(x-gs.cam.x)*(canvas.width/gs.MW), sy=(y-gs.cam.y)*(canvas.height/gs.MH);
+  const el=document.createElement('div');
+  el.className='fdmg';el.style.left=sx+'px';el.style.top=sy+'px';el.style.color=color;el.textContent=text;
+  mc.appendChild(el); setTimeout(()=>el.remove(),1200);
+  gs.parts.push({x,y,vx:(Math.random()-.5)*50,vy:-25-Math.random()*35,life:.6,color,size:3});
+}
+
+function burst(x,y,col,n){for(let i=0;i<n;i++){const a=(i/n)*Math.PI*2;gs.parts.push({x,y,vx:Math.cos(a)*3,vy:Math.sin(a)*3,life:1,color:col,size:4});}}
+
+function addLog(msg){
+  const log=document.getElementById('clog');
+  const el=document.createElement('div');el.className='cmsg';el.textContent=msg;
+  log.insertBefore(el,log.firstChild);
+  setTimeout(()=>el.remove(),4000);
+  while(log.children.length>5)log.removeChild(log.lastChild);
+}
+
+// =================== DRAW ===================
+function draw(){
+  if(!gs.MW)return;
+  const W=canvas.width,H=canvas.height,{MW,MH}=gs,h=gs.hero;
+  const sX=W/MW,sY=H/MH;
+  gs.cam.x=Math.max(0,Math.min(MW-W/sX,h.x-W/sX/2));
+  gs.cam.y=Math.max(0,Math.min(MH-H/sY,h.y-H/sY/2));
+  const ox=-gs.cam.x*sX,oy=-gs.cam.y*sY;
+  ctx.clearRect(0,0,W,H);
+  ctx.save(); ctx.translate(ox,oy);
+  const wW=MW*sX,wH=MH*sY;
+
+  // Ground
+  const gg=ctx.createLinearGradient(0,0,wW,0);
+  gg.addColorStop(0,'#1a3010');gg.addColorStop(.35,'#253518');gg.addColorStop(.5,'#1e2f12');gg.addColorStop(.65,'#2a2010');gg.addColorStop(1,'#3a1010');
+  ctx.fillStyle=gg;ctx.fillRect(0,0,wW,wH);
+
+  // Lanes
+  [.22,.5,.78].forEach(t=>{ctx.fillStyle='rgba(70,95,35,.45)';ctx.fillRect(0,t*wH-16*sY,wW,32*sY);});
+
+  // River
+  ctx.fillStyle='rgba(25,55,95,.55)';ctx.fillRect(wW*.46,0,wW*.08,wH);
+
+  // ── FOG OF WAR ── 
+  // Create revealed areas around allies
+  const revealRadius = 180; // Vision radius in world coordinates
+  const revealPoints = [];
+  
+  // Player hero vision
+  if(!h.dead) revealPoints.push({x:h.x, y:h.y, r:revealRadius});
+  
+  // Friendly minion vision (reduced)
+  gs.fminions.filter(m=>!m.dead).forEach(m=>{
+    revealPoints.push({x:m.x, y:m.y, r:revealRadius*0.5});
+  });
+  
+  // Friendly tower vision
+  gs.towers.filter(t=>t.faction==='good' && t.hp>0).forEach(t=>{
+    revealPoints.push({x:t.x, y:t.y, r:revealRadius*1.2});
+  });
+  
+  // Apply fog of war - darken everything first, then reveal
+  ctx.fillStyle='rgba(5,5,10,0.70)'; // Slightly lighter fog (was 0.75)
+  ctx.fillRect(0,0,wW,wH);
+  
+  // Cut out revealed areas using composite operations
+  ctx.globalCompositeOperation='destination-out';
+  revealPoints.forEach(rp=>{
+    const grad=ctx.createRadialGradient(rp.x*sX,rp.y*sY,0,rp.x*sX,rp.y*sY,rp.r*sX);
+    grad.addColorStop(0,'rgba(0,0,0,1)'); // Full reveal at center
+    grad.addColorStop(0.6,'rgba(0,0,0,0.9)'); // Smoother gradient (was 0.7/0.8)
+    grad.addColorStop(0.85,'rgba(0,0,0,0.5)'); // Wider soft edge
+    grad.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=grad;
+    ctx.beginPath();
+    ctx.arc(rp.x*sX,rp.y*sY,rp.r*sX,0,Math.PI*2);
+    ctx.fill();
+  });
+  ctx.globalCompositeOperation='source-over';
+
+  // Bases
+  ctx.fillStyle='#1a3a6a';ctx.fillRect(0,wH*.2,wW*.08,wH*.6);
+  ctx.strokeStyle='#3a8fc7';ctx.lineWidth=2;ctx.strokeRect(0,wH*.2,wW*.08,wH*.6);
+  ctx.font=`${20*sX}px serif`;ctx.textAlign='center';ctx.fillStyle='#7bc8f0';ctx.fillText('🏰',wW*.04,wH*.53);
+
+  ctx.fillStyle='#6a1a1a';ctx.fillRect(wW*.92,wH*.2,wW*.08,wH*.6);
+  ctx.strokeStyle='#c73a3a';ctx.lineWidth=2;ctx.strokeRect(wW*.92,wH*.2,wW*.08,wH*.6);
+  ctx.fillStyle='#f07878';ctx.fillText('🏯',wW*.96,wH*.53);
+
+  // Towers
+  gs.towers.forEach(t=>{
+    if(t.hp<=0)return;
+    
+    // Enemy towers only visible when in vision
+    if(t.faction==='evil'){
+      const visible = revealPoints.some(rp=>dist2(t,rp)<(rp.r+t.size)*(rp.r+t.size));
+      if(!visible) return; // Hide in fog
+    }
+    
+    const tx=t.x*sX,ty=t.y*sY,ts=t.size*sX;
+    ctx.fillStyle=t.faction==='good'?'#2a4a7a':'#7a2a2a';ctx.fillRect(tx-ts,ty-ts*2,ts*2,ts*2.5);
+    ctx.fillStyle=t.faction==='good'?'#3a6aaa':'#aa3a3a';ctx.fillRect(tx-ts*1.2,ty-ts*.3,ts*2.4,ts*.3);
+    const hp=t.hp/t.maxHp;
+    ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(tx-ts,ty-ts*2.5,ts*2,4*sY);
+    ctx.fillStyle=hp>.5?'#4ac44a':hp>.25?'#f0c030':'#c43030';ctx.fillRect(tx-ts,ty-ts*2.5,ts*2*hp,4*sY);
+  });
+
+  // Friendly minions
+  gs.fminions.forEach(m=>{
+    if(m.dead)return;
+    const mx=m.x*sX,my=m.y*sY,ms=m.size*sX;
+    ctx.fillStyle='#2a6a2a';ctx.beginPath();ctx.arc(mx,my,ms,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#4ac44a';ctx.lineWidth=1.5;ctx.stroke();
+    const hp=m.hp/m.maxHp;ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(mx-ms*1.5,my-ms*1.8,ms*3,3);
+    ctx.fillStyle='#4ac44a';ctx.fillRect(mx-ms*1.5,my-ms*1.8,ms*3*hp,3);
+  });
+
+  // Enemy minions (only render if in vision)
+  gs.eminions.forEach(m=>{
+    if(m.dead)return;
+    // Check if this enemy is visible (within any reveal radius)
+    const visible = revealPoints.some(rp=>dist2(m,rp)<(rp.r+m.size)*(rp.r+m.size));
+    if(!visible) return; // Skip rendering if in fog
+    
+    const mx=m.x*sX,my=m.y*sY,ms=m.size*sX;
+    ctx.fillStyle='#6a2a2a';ctx.beginPath();ctx.arc(mx,my,ms,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#c43030';ctx.lineWidth=1.5;ctx.stroke();
+    const hp=m.hp/m.maxHp;ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(mx-ms*1.5,my-ms*1.8,ms*3,3);
+    ctx.fillStyle='#c43030';ctx.fillRect(mx-ms*1.5,my-ms*1.8,ms*3*hp,3);
+  });
+
+  // Enemy heroes (only render if in vision)
+  gs.enemies.forEach(e=>{
+    if(e.dead)return;
+    // Check if this enemy is visible
+    const visible = revealPoints.some(rp=>dist2(e,rp)<(rp.r+e.size)*(rp.r+e.size));
+    if(!visible) return; // Skip rendering if in fog
+    
+    const ex=e.x*sX,ey=e.y*sY,es=e.size*sX;
+    ctx.shadowColor='#c73a3a';ctx.shadowBlur=8;
+    ctx.fillStyle='#4a0a0a';ctx.beginPath();ctx.arc(ex,ey,es*1.2,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.font=`${es*1.8}px serif`;ctx.textAlign='center';ctx.fillText(e.icon,ex,ey+es*.7);
+    ctx.font=`${Math.max(8,9*sX)}px Cinzel,serif`;ctx.fillStyle='#f07878';ctx.fillText(e.name,ex,ey-es*1.8);
+    const hp=e.curHp/e.maxHp;ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(ex-es*2,ey-es*2.4,es*4,5);
+    ctx.fillStyle=hp>.5?'#c43030':'#ff4400';ctx.fillRect(ex-es*2,ey-es*2.4,es*4*hp,5);
+  });
+
+  // Player hero
+  if(!h.dead){
+    const px=h.x*sX,py=h.y*sY,ps=15*sX;
+    ctx.strokeStyle='rgba(201,162,39,.35)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(px,py,ps*1.6,0,Math.PI*2);ctx.stroke();
+    ctx.shadowColor=h.faction==='good'?'#3a8fc7':'#c73a3a';ctx.shadowBlur=12;
+    ctx.font=`${ps*2}px serif`;ctx.textAlign='center';ctx.fillText(h.icon,px,py+ps*.7);
+    ctx.shadowBlur=0;
+    if(h.buffT>0){ctx.strokeStyle='rgba(240,208,96,.55)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(px,py,ps*2.2,0,Math.PI*2);ctx.stroke();}
+  }
+
+  // Projectiles
+  gs.projs.forEach(p=>{ctx.shadowColor=p.color;ctx.shadowBlur=8;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x*sX,p.y*sY,p.size,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;});
+
+  // Particles
+  gs.parts.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x*sX,p.y*sY,p.size,0,Math.PI*2);ctx.fill();});
+  ctx.globalAlpha=1;
+
+  ctx.restore();
+  drawMM();
+}
+
+function drawMM(){
+  const mW=mmC.width,mH=mmC.height,{MW,MH}=gs;
+  const sx=mW/MW,sy=mH/MH;
+  mmX.fillStyle='#0d1a0a';mmX.fillRect(0,0,mW,mH);
+  [.22,.5,.78].forEach(t=>{mmX.fillStyle='rgba(55,75,28,.5)';mmX.fillRect(0,t*mH-2,mW,4);});
+  mmX.fillStyle='rgba(20,50,90,.5)';mmX.fillRect(mW*.46,0,mW*.08,mH);
+  mmX.fillStyle='#1a3a6a';mmX.fillRect(0,mH*.2,mW*.08,mH*.6);
+  mmX.fillStyle='#6a1a1a';mmX.fillRect(mW*.92,mH*.2,mW*.08,mH*.6);
+  gs.towers.forEach(t=>{if(t.hp<=0)return;mmX.fillStyle=t.faction==='good'?'#4a8fc7':'#c74a4a';mmX.fillRect(t.x*sx-2,t.y*sy-2,5,5);});
+  gs.fminions.filter(m=>!m.dead).forEach(m=>{mmX.fillStyle='#4ac44a';mmX.fillRect(m.x*sx,m.y*sy,2,2);});
+  gs.eminions.filter(m=>!m.dead).forEach(m=>{mmX.fillStyle='#c44a4a';mmX.fillRect(m.x*sx,m.y*sy,2,2);});
+  gs.enemies.filter(e=>!e.dead).forEach(e=>{mmX.fillStyle='#ff6060';mmX.fillRect(e.x*sx-2,e.y*sy-2,5,5);});
+  if(!gs.hero.dead){mmX.fillStyle='#f0d060';mmX.fillRect(gs.hero.x*sx-2,gs.hero.y*sy-2,5,5);}
+}
+
+// =================== HUD ===================
+function hudUpdate(){
+  const h=gs.hero;
+  document.getElementById('hpbar').style.width=Math.max(0,h.curHp/h.maxHp*100)+'%';
+  document.getElementById('mpbar').style.width=Math.max(0,h.curMp/h.maxMp*100)+'%';
+  document.getElementById('xpbar').style.width=(h.xp/h.xpNext*100)+'%';
+  document.getElementById('lvlbdg').textContent=h.level;
+  document.getElementById('goldv').textContent=Math.ceil(h.gold);
+  document.getElementById('killv').textContent=h.kills+' kills';
+  document.getElementById('ghp').textContent=Math.max(0,Math.ceil(gs.goodHp));
+  document.getElementById('ehp').textContent=Math.max(0,Math.ceil(gs.evilHp));
+  const s=Math.floor(gs.gameT),m=Math.floor(s/60);
+  document.getElementById('timer').textContent=`${m}:${(s%60).toString().padStart(2,'0')}`;
+  document.getElementById('wavelbl').textContent=`WAVE ${gs.wave}`;
+  h.abilities.forEach((_,i)=>{
+    const b=document.getElementById(`ab${i}`);
+    if(!b)return;
+    const cd=h.cooldowns[i];
+    b.classList.toggle('cd-active',cd>0);
+    if(cd>0)b.setAttribute('data-cd',Math.ceil(cd));else b.removeAttribute('data-cd');
+  });
+}
+
+// =================== GAME OVER ===================
+function endGame(v){
+  if(gs.over)return; gs.over=true; cancelAnimationFrame(raf);
+  const h=gs.hero,s=Math.floor(gs.gameT),m=Math.floor(s/60);
+  document.getElementById('gok').textContent=h.kills;
+  document.getElementById('gog').textContent=Math.ceil(h.gold);
+  document.getElementById('got').textContent=`${m}:${(s%60).toString().padStart(2,'0')}`;
+  document.getElementById('gol').textContent=h.level;
+  const t=document.getElementById('gotitle'),sub=document.getElementById('gosub');
+  if(v){t.textContent='VICTORY!';t.className='go-title v';sub.textContent='THE LIGHT PREVAILS';}
+  else{t.textContent='DEFEATED';t.className='go-title d';sub.textContent='DARKNESS FALLS';}
+  showScr('gameover');
+}
+
+function returnMenu(){gs={};showScr('title');}
+function showScr(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+
+// Buy item by double-tapping portrait
+document.getElementById('portrait').addEventListener('dblclick',()=>tryBuy());
+document.getElementById('portrait').addEventListener('touchend',e=>{
+  const now=Date.now();
+  if(now-(document.getElementById('portrait')._lt||0)<400)tryBuy();
+  document.getElementById('portrait')._lt=now;
+});
+function tryBuy(){
+  const h=gs.hero;if(!h||h.items?.length>=4)return;
+  const owned=(h.items||[]).map(i=>i.name);
+  const can=ITEMS.filter(i=>i.cost<=h.gold&&!owned.includes(i.name));
+  if(!can.length){addLog('⚠ Not enough gold');return;}
+  const item=can[Math.floor(Math.random()*can.length)];
+  h.gold-=item.cost;h.items.push(item);
+  if(item.atk)h.atk+=item.atk;if(item.def)h.def+=item.def;
+  if(item.hp){h.maxHp+=item.hp;h.curHp+=item.hp;}if(item.mp){h.maxMp+=item.mp;h.curMp+=item.mp;}
+  addLog(`🛒 Bought ${item.name}! (-${item.cost}💰)`);
+  spawnFx(h.x,h.y-30,'#f0d060',item.icon);
+}
+
+window.addEventListener('resize',resizeCvs);
+// Force grid build on mobile
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(buildGrid,50));
+}else{
+  setTimeout(buildGrid,50);
+}
+</script>
+
+</body>
+</html>
